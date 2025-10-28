@@ -2,7 +2,11 @@ import logging
 from pathlib import Path
 from openai import OpenAI
 from agents.base_agent import BaseAgent
-
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage, SystemMessage
 
 class CdsAgent(BaseAgent):
     """
@@ -19,24 +23,60 @@ class CdsAgent(BaseAgent):
         return OpenAI(api_key=api_key)
 
     # ------------------- RAG CONTEXT -------------------
-    def _get_rag_context(self) -> str:
+    def _init_vectorstore(self) -> str:
         """
         Load the CDS reference (RAG) file and return content as string.
         """
         rag_file = Path(__file__).parent / "cds_requirements.txt"
+        vs_path = Path(__file__) / "cds_vector_store"
+        
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    
+        if vs_path.exists():
+            self.logger.info("📚 Loading existing FAISS vector DB for CDSAgent...")
+            return FAISS.load_local(vs_path, embeddings, allow_dangerous_deserialization=True)
+        
         if not rag_file.exists():
-            raise FileNotFoundError(f"RAG file not found: {rag_file}")
-        return rag_file.read_text(encoding="utf-8").strip()
+           self.logger.warning(f"⚠️ No KB file found at {rag_file}. Proceeding without RAG context.")
+           return None
+    
+        rag_text = rag_file.read_text(encoding="utf-8").strip()
+        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+        docs = [Document(page_content=chunk) for chunk in splitter.split_text(rag_text)]
 
+        vectorstore = FAISS.from_documents(docs, embeddings)
+        vectorstore.save_local(vs_path)
+        self.logger.info("✅ New FAISS vector DB created for TableAgent.")
+        return vectorstore
+    
+    def _get_relevant_context(self, query: str, k: int = 4) -> str:
+        """
+        Retrieves top-k relevant KB chunks from vector DB for given query.
+        """
+        if not hasattr(self, "vectorstore") or self.vectorstore is None:
+            self.vectorstore = self._init_vectorstore()
+        if not self.vectorstore:
+            return ""
+
+        results = self.vectorstore.similarity_search(query, k=k)
+        if not results:
+            return ""
+        combined = "\n\n".join([r.page_content for r in results])
+        self.logger.info(f"📖 Retrieved {len(results)} RAG context chunks.")
+        return combined
     # ------------------- MAIN RUN -------------------
     def run(self, section_text: str, metadata=None):
-        """
+        """ 
         Generate a RAP-ready CDS view entity definition using requirement and RAG context.
         """
         self.logger.info("Running RAP CDS agent with RAG file context...")
 
         # Step 1: Load RAG file
-        rag_context = self._get_rag_context()
+         # --- Retrieve relevant RAG context ---
+        rag_context = self._get_relevant_context(section_text)
+        full_context = section_text.strip()
+        if rag_context:
+            full_context += f"\n\n--- Retrieved Knowledge Base Context ---\n{rag_context}"
 
         # Step 2: Prepare prompts
         system_prompt = (
