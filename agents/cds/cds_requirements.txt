@@ -1,0 +1,89 @@
+# 1. TYPE: VIEW ENTITY
+
+Used to expose a subset of fields from a root view entity. Used in RAP for the projection layer.
+
+Give below mandatory annotations whenever define view entity TYPE
+CDS view is created:
+@AccessControl.authorizationCheck: #CHECK
+@ObjectModel: {
+   usageType: {
+      dataClass:          #TRANSACTIONAL,
+      serviceQuality:     #C,
+      sizeCategory:       #XL
+    }
+}
+@EndUserText.label: '<meaningful description>'
+@Metadata.allowExtensions: true
+@VDM.viewType: #CONSUMPTION
+@Search.searchable: true
+
+#2. TYPE: ROOT VIEW ENTITY
+Defines the root business object for RAP BO. Used as the main data model with composition, keys, and transactional behavior.
+
+Give below mandatory annotations whenever define root view entity TYPE
+CDS view is created:
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: '<meaningful description>'
+@Metadata.allowExtensions: true
+
+EXAMPLE:
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Sales Order Root Entity'
+@Metadata.allowExtensions: true
+define root view entity ZSO_Header
+      SalesOrganization,
+      DistributionChannel
+}; as select from I_SalesOrder
+{
+  key SalesOrder as SalesOrder,
+      SalesOrderType,
+ 
+#3. TYPE: PROJECTION VIEW ENTITY
+Used to expose a subset of fields from a root view entity. Used in RAP for the projection layer.
+
+Give below mandatory annotation when projection view entity needs to be created:
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: '<Projection view label>'
+
+EXAMPLE:
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Sales Order Projection'
+define view entity ZSO_Projection
+  as projection on ZSO_Header
+{
+  key SalesOrder,
+      SalesOrderType,
+      SalesOrganization
+};
+
+
+#4. TYPE: ANALYTICAL CUBE
+PURPOSE:
+Used for analytical reporting and exposed to BW or SAC.
+
+Use below annotations for analytical cube CDS view
+@Analytics.dataCategory: #CUBE
+@EndUserText.label: '<Analytical View>'
+@AccessControl.authorizationCheck: #CHECK
+
+EXAMPLE:
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Profitability Cube'
+@Analytics.dataCategory: #CUBE
+define view entity C_ProfitCube
+  as select from I_ProfitCenter
+{
+  key ProfitCenter,
+      CompanyCode,
+      ProfitAmount
+};
+
+#5. NAMING BEST PRACTICE
+
+Prefix with module
+Limit total name length ≤ 30 characters.
+Avoid special characters or reserved words.
+
+#6. Do not create SQL view name type CDS
+
+#7. Place annotation just above the Define view
