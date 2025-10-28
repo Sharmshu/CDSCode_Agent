@@ -87,3 +87,6 @@ Avoid special characters or reserved words.
 #6. Do not create SQL view name type CDS
 
 #7. Place annotation just above the Define view
+
+#8. While creating CDS between two or more table use 
+    association along with cardianality instead of inner joins
