@@ -23,7 +23,7 @@ class CdsAgent(BaseAgent):
         """
         Load the CDS reference (RAG) file and return content as string.
         """
-        rag_file = Path(__file__).parent / "rag_data" / "cds_reference.txt"
+        rag_file = Path(__file__).parent / "rag_data" / "cds_requirements.txt"
         if not rag_file.exists():
             raise FileNotFoundError(f"RAG file not found: {rag_file}")
         return rag_file.read_text(encoding="utf-8").strip()
