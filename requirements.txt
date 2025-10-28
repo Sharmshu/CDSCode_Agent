@@ -7,3 +7,10 @@ python-dotenv
 aiofiles
 openai
 langchain-core
+tqdm
+faiss-cpu
+numpy
+pydantic
+tenacity
+langsmith
+langchain_text_splitters
