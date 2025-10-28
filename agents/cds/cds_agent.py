@@ -28,7 +28,7 @@ class CdsAgent(BaseAgent):
         Load the CDS reference (RAG) file and return content as string.
         """
         rag_file = Path(__file__).parent / "cds_requirements.txt"
-        vs_path = Path(__file__) / "cds_vector_store"
+        vs_path = Path(__file__).parent / "cds_vector_store"
         
         embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
     
