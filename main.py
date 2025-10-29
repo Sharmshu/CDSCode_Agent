@@ -12,6 +12,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from fastapi.responses import StreamingResponse
 
 # Local modules
 from utils.file_utils import get_job_dir, zip_outputs
@@ -21,7 +22,7 @@ from agents.ValueHelp.value_help_agent import ValueHelpAgent
 # ------------------------------ CONFIG ------------------------------
 load_dotenv()
 
-openai_api_key = os.getenv("OPENAI_API_KEY")
+# openai_api_key = os.getenv("OPENAI_API_KEY")
 
 from utils.logger_config import setup_logger
 import logging
@@ -30,7 +31,7 @@ setup_logger()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SAP ABAP Code Generator (AI Agents)")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 
 # In-memory job store
