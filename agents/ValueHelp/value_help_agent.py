@@ -1,56 +1,63 @@
-import logging
+import os
+import re
+import json
 from pathlib import Path
-from openai import OpenAI
-from agents.base_agent import BaseAgent
-from langchain_openai import OpenAIEmbeddings
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores.faiss import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage, SystemMessage
+from agents.base_agent import BaseAgent
+
+load_dotenv()
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 
 
 class ValueHelpAgent(BaseAgent):
     """
-    Agent that generates RAP-ready Value Help CDS views (F4 helps)
-    using LLM and an optional RAG knowledge base.
+    Generates RAP-ready Value Help CDS views (F4 help) using LLM
+    and optional RAG knowledge base.
     """
 
-    def __init__(self, job_dir: Path, logger=None):
-        super().__init__(job_dir, logger)
-        self.agent_dir = Path(__file__).parent        # <-- Points to /agents/ValueHelp
-        self.llm = self._init_llm()
-        self.vectorstore = self._init_vectorstore()
-        self.logger.info("✅ ValueHelpAgent initialized successfully.")
-
-    # ------------------- LLM INIT -------------------
+    # ------------------ LLM INIT ------------------
     def _init_llm(self):
-        """Initialize OpenAI client."""
-        import os
+        """Initialize the LLM client."""
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("Missing OPENAI_API_KEY in environment variables.")
-        return OpenAI(api_key=api_key)
+        return ChatOpenAI(
+            model_name=os.getenv("VALUE_HELP_MODEL_NAME", "gpt-4.1-mini"),
+            temperature=float(os.getenv("VALUE_HELP_TEMPERATURE", "0.2")),
+            openai_api_key=api_key
+        )
 
-    # ------------------- RAG CONTEXT -------------------
+    # ------------------ VECTORSTORE INIT ------------------
     def _init_vectorstore(self):
-        """
-        Load or create FAISS vector store from the Value Help knowledge base.
-        """
-        rag_file = self.agent_dir / "value_help_requirements.txt"
-        vs_path = self.agent_dir / "value_help_vector_store"
+        """Load or build FAISS vector DB from value_help_requirements.txt."""
+        kb_path = Path(__file__).parent / "value_help_requirements.txt"
+        vs_path = Path(__file__).parent / "value_help_vector_store"
 
         embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
+        # Reuse existing vectorstore if KB not updated
         if vs_path.exists():
-            self.logger.info("📚 Loading existing FAISS vector DB for ValueHelpAgent...")
-            return FAISS.load_local(vs_path, embeddings, allow_dangerous_deserialization=True)
+            kb_mtime = kb_path.stat().st_mtime if kb_path.exists() else 0
+            vs_mtime = max((f.stat().st_mtime for f in vs_path.glob("**/*")), default=0)
+            if kb_mtime <= vs_mtime:
+                self.logger.info("📚 Loading existing FAISS vector DB for ValueHelpAgent...")
+                return FAISS.load_local(vs_path, embeddings, allow_dangerous_deserialization=True)
+            else:
+                self.logger.info("🔄 KB updated — rebuilding FAISS index...")
 
-        if not rag_file.exists():
-            self.logger.warning(f"⚠️ No KB file found at {rag_file}. Proceeding without RAG context.")
+        if not kb_path.exists():
+            self.logger.warning(f"⚠️ No KB file found at {kb_path}. Proceeding without RAG context.")
             return None
 
-        rag_text = rag_file.read_text(encoding="utf-8").strip()
+        kb_text = kb_path.read_text(encoding="utf-8").strip()
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-        docs = [Document(page_content=chunk) for chunk in splitter.split_text(rag_text)]
+        docs = [Document(page_content=chunk) for chunk in splitter.split_text(kb_text)]
 
         vectorstore = FAISS.from_documents(docs, embeddings)
         vectorstore.save_local(vs_path)
@@ -59,8 +66,9 @@ class ValueHelpAgent(BaseAgent):
 
     def _get_relevant_context(self, query: str, k: int = 4) -> str:
         """Retrieve top-k relevant KB chunks."""
+        if not hasattr(self, "vectorstore") or self.vectorstore is None:
+            self.vectorstore = self._init_vectorstore()
         if not self.vectorstore:
-            self.logger.warning("⚠️ No vector store available, skipping RAG context.")
             return ""
         results = self.vectorstore.similarity_search(query, k=k)
         if not results:
@@ -69,24 +77,31 @@ class ValueHelpAgent(BaseAgent):
         self.logger.info(f"📖 Retrieved {len(results)} RAG context chunks for Value Help.")
         return combined
 
-    # ------------------- MAIN RUN -------------------
+    # ------------------ MAIN RUN ------------------
     def run(self, field_description: str, metadata=None):
         """
         Generate a RAP Value Help CDS view definition for a standard field.
         """
-        self.logger.info("🚀 Running ValueHelpAgent with RAG context...")
+        if not field_description:
+            self.logger.warning("No field description provided to ValueHelpAgent.")
+            return {"type": "value_help", "purpose": "", "code": ""}
 
-        # Step 1: Retrieve relevant context
+        self.job_dir.mkdir(parents=True, exist_ok=True)
+        self.logger.info("🚀 Running ValueHelpAgent with provided field description...")
+
+        # --- Retrieve relevant RAG context ---
         rag_context = self._get_relevant_context(field_description)
         full_context = field_description.strip()
         if rag_context:
             full_context += f"\n\n--- Retrieved Knowledge Base Context ---\n{rag_context}"
 
-        # Step 2: Build prompts
-        system_prompt = (
-            "You are an SAP ABAP expert specializing in the RAP model. "
-            "Generate a valid CDS view entity that acts as a Value Help (F4 Help) for a standard field. "
-            "Include necessary RAP annotations and make it syntax-correct."
+        # --- System and user prompts ---
+        system_message = SystemMessage(
+            content=(
+                "You are an SAP ABAP expert specializing in the RAP model. "
+                "Generate valid CDS view entities for Value Help (F4 help) with correct annotations, naming, and syntax. "
+                "Use retrieved RAG context for reference."
+            )
         )
 
         user_prompt = f"""
@@ -96,48 +111,38 @@ class ValueHelpAgent(BaseAgent):
         Reference knowledge (from RAG KB if available):
         {rag_context}
 
-        Please generate:
-        - A valid CDS view entity for RAP Value Help (without SQL view name)
-        - Follow SAP naming conventions and ensure RAP compatibility.
+        Output strictly in JSON format with two keys:
+        1) "cds_code": RAP-ready ABAP CDS view entity code for value help.
+        2) "cds_purpose": Short description of the CDS view purpose.
         """
 
-        # Step 3: Generate CDS code
+        # --- LLM generation ---
+        resp = self.llm.invoke([system_message, HumanMessage(content=user_prompt)])
+        raw = getattr(resp, "content", str(resp)).strip()
+
+        # --- Parse JSON safely ---
         try:
-            response = self.llm.chat.completions.create(
-                model="gpt-4.1-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0.2,
-            )
-            cds_code = response.choices[0].message.content.strip()
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
+            if not match:
+                raise ValueError("No JSON object found in LLM response.")
+            data = json.loads(match.group())
         except Exception as e:
-            self.logger.error(f"❌ LLM generation failed: {e}")
+            self.logger.error(f"Failed to parse JSON from LLM output: {e}")
+            self.logger.debug(f"Raw LLM output:\n{raw}")
             raise
 
-        # Step 4: Summarize purpose
-        purpose_prompt = (
-            f"Summarize briefly the purpose of this CDS view:\n\n{cds_code}\n\n"
-            "Return one concise sentence (e.g., 'Value help CDS view for Customer field.')."
-        )
+        cds_code = data.get("cds_code", "").strip()
+        cds_purpose = data.get("cds_purpose", "").strip()
 
-        purpose_resp = self.llm.chat.completions.create(
-            model="gpt-4.1-mini",
-            messages=[
-                {"role": "system", "content": "You summarize SAP CDS entities."},
-                {"role": "user", "content": purpose_prompt},
-            ],
-            temperature=0.2,
-        )
-        purpose = purpose_resp.choices[0].message.content.strip()
-
-        # Step 5: Save result
-        self.job_dir.mkdir(parents=True, exist_ok=True)
+        # --- Save CDS file ---
         cds_file = self.job_dir / "value_help_cds_view.abap"
         cds_file.write_text(cds_code, encoding="utf-8")
-
         self.logger.info(f"💾 Value Help CDS view saved to: {cds_file}")
-        self.logger.info(f"📝 Purpose: {purpose}")
+        self.logger.info(f"📝 Purpose: {cds_purpose}")
 
-        return {"path": cds_file, "purpose": purpose}
+        return {
+            "type": "value_help",
+            "purpose": cds_purpose,
+            "code": cds_code,
+            "path": cds_file
+        }
