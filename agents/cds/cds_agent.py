@@ -14,7 +14,6 @@ load_dotenv()
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 
-
 class CdsAgent(BaseAgent):
     """
     Generates RAP-ready CDS view entity definitions using dynamic RAG context from vector database.
