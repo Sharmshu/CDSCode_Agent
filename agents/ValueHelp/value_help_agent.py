@@ -131,9 +131,9 @@ class ValueHelpAgent(BaseAgent):
             self.logger.debug(f"Raw LLM output:\n{raw}")
             raise
 
-        value_help_code = data.get("vh_code", "").strip()
-        value_help_purpose = data.get("vh_purpose", "").strip()
-        value_help_entity = data.get("vh_entity", "").strip()
+        value_help_code = data.get("value_help_code", "").strip()
+        value_help_purpose = data.get("value_help_purpose", "").strip()
+        value_help_entity = data.get("value_help_entity", "").strip()
 
         # --- Save CDS file ---
         vh_file = self.job_dir / "value_help_cds_view.abap"
