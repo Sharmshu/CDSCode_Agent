@@ -112,8 +112,8 @@ class ValueHelpAgent(BaseAgent):
         {rag_context}
 
         Output strictly in JSON format with two keys:
-        1) "cds_code": RAP-ready ABAP CDS view entity code for value help.
-        2) "cds_purpose": Short description of the CDS view purpose.
+        1) "value_help_code": RAP-ready ABAP CDS view entity code for value help.
+        2) "value_help_purpose": Short description of the value help CDS view purpose.
         """
 
         # --- LLM generation ---
@@ -131,20 +131,20 @@ class ValueHelpAgent(BaseAgent):
             self.logger.debug(f"Raw LLM output:\n{raw}")
             raise
 
-        cds_code = data.get("cds_code", "").strip()
-        cds_purpose = data.get("cds_purpose", "").strip()
-        cds_entity = data.get("cds_entity", "").strip()
+        value_help_code = data.get("vh_code", "").strip()
+        value_help_purpose = data.get("vh_purpose", "").strip()
+        value_help_entity = data.get("vh_entity", "").strip()
 
         # --- Save CDS file ---
         vh_file = self.job_dir / "value_help_cds_view.abap"
-        vh_file.write_text(cds_code, encoding="utf-8")
+        vh_file.write_text(value_help_code, encoding="utf-8")
         self.logger.info(f"💾 Value Help CDS view saved to: {vh_file}")
-        self.logger.info(f"📝 Purpose: {cds_purpose}")
+        self.logger.info(f"📝 Purpose: {value_help_purpose}")
 
         return {
             "type": "value_help",
-            "purpose": cds_purpose,
-            "code": cds_code,
-            "entity": cds_entity,
+            "purpose": value_help_purpose,
+            "code": value_help_code,
+            "entity": value_help_entity,
             # "path": cds_file
         }
