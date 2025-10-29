@@ -70,6 +70,7 @@ def run_job(job_id: str, requirement_text: str):
         # -------------------- Initialize --------------------
         cds_result = ""
         value_help_result = ""
+        value_help_entity = ""
         files_to_zip = []
     
         # -------------------- Run Agents --------------------
@@ -80,11 +81,19 @@ def run_job(job_id: str, requirement_text: str):
            value_help_output = value_help_agent.run(value_help_text)
            value_help_code = value_help_output.get("code", "")
            value_help_purpose = value_help_output.get("purpose", "")
+           value_help_entity = value_help_output.get("entity", "")
+
            
            if value_help_code: 
-               files_to_zip.append(("value_help_requirements.txt", value_help_code))
-               logger.info(f"[{job_id}] ✅ Value Help CDS generated successfully.")
-               logger.info(f"[{job_id}] 📘 Purpose: {value_help_purpose}")
+               # Extract CDS entity name for reuse in main CDS
+                import re
+                match = re.search(r"define\s+view\s+entity\s+(\w+)", value_help_code)
+                if match:
+                    value_help_entity = match.group(1)
+                    logger.info(f"[{job_id}] Extracted Value Help entity: {value_help_entity}")
+                files_to_zip.append(("value_help_requirements.txt", value_help_code))
+                logger.info(f"[{job_id}] ✅ Value Help CDS generated successfully.")
+                logger.info(f"[{job_id}] 📘 Purpose: {value_help_purpose}")
            else:
                 logger.warning(f"[{job_id}] ValueHelpAgent returned empty code.")
         else:
@@ -104,6 +113,7 @@ def run_job(job_id: str, requirement_text: str):
             ---
             If applicable, use this value help in your CDS annotations:
             Purpose: {value_help_purpose or 'No purpose found'}
+            Entity Name: {value_help_entity or 'N/A'}
             """
            cds_output = cds_agent.run(cds_context)
            

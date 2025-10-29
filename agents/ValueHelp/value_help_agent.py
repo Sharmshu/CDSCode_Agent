@@ -133,6 +133,7 @@ class ValueHelpAgent(BaseAgent):
 
         cds_code = data.get("cds_code", "").strip()
         cds_purpose = data.get("cds_purpose", "").strip()
+        cds_entity = data.get("cds_entity", "").strip()
 
         # --- Save CDS file ---
         cds_file = self.job_dir / "value_help_cds_view.abap"
@@ -144,5 +145,6 @@ class ValueHelpAgent(BaseAgent):
             "type": "value_help",
             "purpose": cds_purpose,
             "code": cds_code,
-            "path": cds_file
+            "entity": cds_entity,
+            # "path": cds_file
         }
