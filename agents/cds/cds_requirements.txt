@@ -94,3 +94,6 @@ Place annotation just above the Define view
 
 #8. 
 While creating CDS between two or more table use association along with cardianality instead of inner joins
+
+#9. Value Help
+Use value help in CDS if needed

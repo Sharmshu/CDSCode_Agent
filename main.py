@@ -83,6 +83,8 @@ def run_job(job_id: str, requirement_text: str):
            
            if value_help_code: 
                files_to_zip.append(("value_help_requirements.txt", value_help_code))
+               logger.info(f"[{job_id}] ✅ Value Help CDS generated successfully.")
+               logger.info(f"[{job_id}] 📘 Purpose: {value_help_purpose}")
            else:
                 logger.warning(f"[{job_id}] ValueHelpAgent returned empty code.")
         else:
@@ -92,10 +94,18 @@ def run_job(job_id: str, requirement_text: str):
         if cds_text:
            logger.info(f"[{job_id}] Running cds...")
            cds_agent = CdsAgent(job_dir=job_dir)
-           cds_output = cds_agent.run(
-           cds_text,
-           cds_purpose = value_help_purpose
-           )
+        #    cds_output = cds_agent.run(
+        #    cds_text,
+        #    cds_purpose = value_help_purpose
+        #    )
+           cds_context = f"""
+           {cds_text}
+
+            ---
+            If applicable, use this value help in your CDS annotations:
+            Purpose: {value_help_purpose or 'No purpose found'}
+            """
+           cds_output = cds_agent.run(cds_context)
            
            cds_code = cds_output.get("code", "")
            if cds_code: 
