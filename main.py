@@ -103,23 +103,17 @@ def run_job(job_id: str, requirement_text: str):
         if cds_text:
            logger.info(f"[{job_id}] Running cds...")
            cds_agent = CdsAgent(job_dir=job_dir)
-        #    cds_output = cds_agent.run(
-        #    cds_text,
-        #    cds_purpose = value_help_purpose
-        #    )
-           cds_context = f"""
-           {cds_text}
-
-            ---
-            If applicable, use this value help in your CDS annotations:
-            Purpose: {value_help_purpose or 'No purpose found'}
-            Entity Name: {value_help_entity or 'N/A'}
-            """
-           cds_output = cds_agent.run(cds_context)
+           cds_output = cds_agent.run(
+                cds_text,
+                metadata={
+                    "value_help_entity": value_help_entity,
+                    "value_help_purpose": value_help_purpose
+                }
+            )
            
            cds_code = cds_output.get("code", "")
            if cds_code: 
-               files_to_zip.append(("cds_requirements.txt", cds_code))
+               files_to_zip.append(("cds_view.txt", cds_code))
            else:
                 logger.warning(f"[{job_id}] CdsAgent returned empty code.")
         else:

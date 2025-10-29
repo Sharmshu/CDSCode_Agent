@@ -136,9 +136,9 @@ class ValueHelpAgent(BaseAgent):
         cds_entity = data.get("cds_entity", "").strip()
 
         # --- Save CDS file ---
-        cds_file = self.job_dir / "value_help_cds_view.abap"
-        cds_file.write_text(cds_code, encoding="utf-8")
-        self.logger.info(f"💾 Value Help CDS view saved to: {cds_file}")
+        vh_file = self.job_dir / "value_help_cds_view.abap"
+        vh_file.write_text(cds_code, encoding="utf-8")
+        self.logger.info(f"💾 Value Help CDS view saved to: {vh_file}")
         self.logger.info(f"📝 Purpose: {cds_purpose}")
 
         return {
