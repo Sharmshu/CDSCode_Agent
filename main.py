@@ -79,7 +79,7 @@ def run_job(job_id: str, requirement_text: str):
            value_help_agent = ValueHelpAgent(job_dir=job_dir)
            value_help_output = value_help_agent.run(value_help_text)
            value_help_code = value_help_output.get("code", "")
-           value_help_purpose = value_help_output("purpose")
+           value_help_purpose = value_help_output.get("purpose", "")
            
            if value_help_code: 
                files_to_zip.append(("value_help_requirements.txt", value_help_code))
@@ -156,21 +156,27 @@ def job_status(job_id: str):
     job = jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    
+    status = job.get("status")
 
-    if job.get("status") == "finished":
-        zip_path = Path(job["zip_path"])
-        if not zip_path.exists():
-            raise HTTPException(status_code=500, detail="ZIP file missing")
-
-        return FileResponse(
-            path=str(zip_path),
-            filename=zip_path.name,
-            media_type="application/zip",
-            headers={"X-Job-ID": job_id, "X-Status": "finished"},
-        )
+    if status == "finished":
+        # If in-memory ZIP is available
+        if "zip_bytes" in job:
+            zip_buffer = io.BytesIO(job["zip_bytes"])
+            zip_buffer.seek(0)
+            return StreamingResponse(
+                zip_buffer,
+                media_type="application/zip",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{job_id}_results.zip"',
+                    "X-Job-ID": job_id,
+                    "X-Status": "finished"
+                }
+            )
+        else:
+            raise HTTPException(status_code=500, detail="ZIP bytes not found in memory")
 
     return JSONResponse(job)
-
 
 @app.get("/health")
 def health():
