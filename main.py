@@ -3,7 +3,7 @@ main.py
 FastAPI app + background job controller for modular AI agents.
 """
 
-import os
+import os,io,zipfile
 import uuid
 import logging
 from datetime import datetime
@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from utils.file_utils import get_job_dir, zip_outputs
 from utils.job_utils import split_sections
 from agents.cds.cds_agent import CdsAgent
+from agents.ValueHelp.value_help_agent import ValueHelpAgent
 # ------------------------------ CONFIG ------------------------------
 load_dotenv()
 
@@ -61,40 +62,71 @@ def run_job(job_id: str, requirement_text: str):
             matched = [v for k, v in sections.items() if k.startswith(prefix)]
             return "\n\n".join(matched).strip()
 
-        cds_text = get_section_text("7")  # Section 7 (CDS view)
+        value_help_text = get_section_text("7")  #Section 7 (Value Help)
+        cds_text = get_section_text("8")  # Section 8 (CDS view)
         
-        logger.info(f"[{job_id}] Section 7 length: {len(cds_text)}")
+        logger.info(f"[{job_id}] Section 7 length: {len(value_help_text)}")
+        logger.info(f"[{job_id}] Section 8 length: {len(cds_text)}")
+        
+        # -------------------- Initialize --------------------
+        cds_result = ""
+        value_help_result = ""
+        files_to_zip = []
     
         # -------------------- Run Agents --------------------
-        cds_agent = CdsAgent(job_dir=job_dir)
+        # --- Value help Agent ---
+        if value_help_text:
+           logger.info(f"[{job_id}] Running value help...") 
+           value_help_agent = ValueHelpAgent(job_dir=job_dir)
+           value_help_output = value_help_agent.run(value_help_text)
+           value_help_code = value_help_output.get["code", ""]
+           value_help_purpose = value_help_output["purpose"]
+           
+           if value_help_code: 
+               files_to_zip.append(("value_help_requirements.txt", value_help_code))
+           else:
+                logger.warning(f"[{job_id}] ValueHelpAgent returned empty code.")
+        else:
+            logger.info(f"[{job_id}] No Value Help section found — skipping ValueHelpAgent.")
+        
+        # --- CDS Agent ---
+        if cds_text:
+           logger.info(f"[{job_id}] Running cds...")
+           cds_agent = CdsAgent(job_dir=job_dir)
+           cds_output = cds_agent.run(
+           cds_text,
+           cds_purpose = value_help_purpose
+           )
+           
+           cds_code = cds_output.get["code", ""]
+           if cds_code: 
+               files_to_zip.append(("cds_requirements.txt", cds_code))
+           else:
+                logger.warning(f"[{job_id}] CdsAgent returned empty code.")
+        else:
+            logger.info(f"[{job_id}] No CDS section found — skipping CdsAgent.")
+        # cds_result = path_structure.read_text(encoding="utf-8") if path_structure.exists() else ""
 
-        # --- Structure Agent ---
-        logger.info(f"[{job_id}] Running cds...")
-        cds_output = cds_agent.run(cds_text)
-        path_structure = cds_output["path"]
-        cds_purpose = cds_output["purpose"]
-        cds_result = path_structure.read_text(encoding="utf-8") if path_structure.exists() else ""
+        # -------------------- In memory Zip Results --------------------
+        if not files_to_zip:
+            raise ValueError("No valid sections found — no output generated.")
 
-        # Combine purposes dynamically
-        purposes = {
-            "CDS": cds_purpose,
-        }
-        logger.info(f"[{job_id}] Purposes received: {list(purposes.keys())}")
-        # -------------------- Zip Results --------------------
-        zip_path = zip_outputs(job_dir, [path_structure ], job_id)
-        logger.info(f"[{job_id}] Finished successfully. ZIP: {zip_path}")
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for filename, content in files_to_zip:
+                zf.writestr(filename, content)
+        zip_buffer.seek(0)
 
         # Update job record
         jobs[job_id].update({
             "status": "finished",
             "finished_at": datetime.utcnow().isoformat(),
-            "zip_path": str(zip_path),
-            "outputs": {
-                "structure": str(path_structure.name),
+            "zip_bytes": zip_buffer.getvalue(),
+            "outputs": [f[0] for f in files_to_zip],
             },
-        })
+        )
 
-        logger.info(f"✅ Job {job_id} completed. File ready at: {zip_path}")
+        logger.info(f"✅ Job {job_id} completed successfully (in-memory ZIP).")
 
     except Exception as e:
         logger.exception(f"❌ Job {job_id} failed: {e}")
