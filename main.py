@@ -78,8 +78,8 @@ def run_job(job_id: str, requirement_text: str):
            logger.info(f"[{job_id}] Running value help...") 
            value_help_agent = ValueHelpAgent(job_dir=job_dir)
            value_help_output = value_help_agent.run(value_help_text)
-           value_help_code = value_help_output.get["code", ""]
-           value_help_purpose = value_help_output["purpose"]
+           value_help_code = value_help_output.get("code", "")
+           value_help_purpose = value_help_output("purpose")
            
            if value_help_code: 
                files_to_zip.append(("value_help_requirements.txt", value_help_code))
@@ -97,7 +97,7 @@ def run_job(job_id: str, requirement_text: str):
            cds_purpose = value_help_purpose
            )
            
-           cds_code = cds_output.get["code", ""]
+           cds_code = cds_output.get("code", "")
            if cds_code: 
                files_to_zip.append(("cds_requirements.txt", cds_code))
            else:
