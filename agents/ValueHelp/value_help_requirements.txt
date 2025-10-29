@@ -1,0 +1,50 @@
+#1. Purpose
+Value Help (F4 Help) CDS Views provide selectable lists of values for input fields in Fiori applications.
+They enable users to search and select allowed values for standard fields such as Material (MATNR),
+Customer (KUNNR), Plant (WERKS), Company Code (BUKRS), etc.
+
+In RAP (RESTful ABAP Programming Model), value helps are implemented as CDS view entities with
+data category VALUE_HELP and linked via annotations in the main consumption or interface view.
+
+#2. Mandatory Annotations
+
+@ObjectModel.dataCategory: #VALUE_HELP
+  → Informs the system that this CDS entity is a value help.
+
+@EndUserText.label: '<Short Description>'
+  → Descriptive title for the value help entity.
+
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+
+@Consumption.valueHelpDefinition: [
+  { entity: '<ValueHelpEntity>', external: true }
+
+]
+  → Used in consumption views to link fields to the value help.
+
+#3. Structural Requirements
+
+- The entity must define at least one **key field** (typically the technical ID).
+- Include one or more **descriptive text fields** for display in the F4 help dialog.
+- Avoid SELECT * — explicitly list all fields.
+- Ensure field names and data elements align with SAP naming conventions (e.g., `Material`, `MaterialText`, `Customer`, `CustomerName`).
+
+#4. Naming Conventions
+
+- CDS entity name format:
+  Z_I_<BusinessObject>VH
+  Example: Z_I_MaterialVH, Z_I_CustomerVH, Z_I_CompanyCodeVH
+- Always it should start with Z and suffix with VH
+
+#5. Examples of value help
+
+@EndUserText.label: 'Value Help for Material'
+@ObjectModel.dataCategory: #VALUE_HELP
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+
+define view entity Z_I_MaterialVH
+as select from I_Material as Material
+{
+key Material as Material,
+MaterialText
+}

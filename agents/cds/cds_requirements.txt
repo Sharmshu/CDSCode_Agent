@@ -25,11 +25,13 @@ CDS view is created:
 @AccessControl.authorizationCheck: #CHECK
 @EndUserText.label: '<meaningful description>'
 @Metadata.allowExtensions: true
+@Metadata.ignorePropagatedAnnotations: true
 
 EXAMPLE:
 @AccessControl.authorizationCheck: #CHECK
 @EndUserText.label: 'Sales Order Root Entity'
 @Metadata.allowExtensions: true
+@Metadata.ignorePropagatedAnnotations: true
 define root view entity ZSO_Header
       SalesOrganization,
       DistributionChannel
