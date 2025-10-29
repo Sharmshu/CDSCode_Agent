@@ -115,8 +115,7 @@ class CdsAgent(BaseAgent):
         
         Important:
         - If a value help CDS entity is available, use an **association** to it instead of @ObjectModel.valueHelpDefinition.
-        - The value help entity to use is: {value_help_entity if value_help_entity else "none"}
-
+    
         Output format (strict JSON only, no markdown, no commentary):
         {{
             "cds_code": "...",

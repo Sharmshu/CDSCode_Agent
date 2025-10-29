@@ -95,6 +95,15 @@ Place annotation just above the Define view
 #8. 
 While creating CDS between two or more table use association along with cardianality instead of inner joins
 
-#9. Value Help
-Use the following Value Help CDS entity for F4 help:
-{metadata['value_help_entity']}
+#9. General instructions for Value help CDS
+If the following Value Help CDS entity exists, use it in the main CDS as an **association**:
+- Value Help Entity Name: {value_help_entity or "None provided"}
+- Purpose: {value_help_purpose or "N/A"}
+
+🚫 Do NOT use @ObjectModel.valueHelpDefinition or @UI.valueHelp annotations.
+✅ Instead, create a CDS association like this:
+    association [0..1] to {value_help_entity} as _{(value_help_entity or "VH").lower()}
+        on _{(value_help_entity or "VH").lower()}.<key_field> = <main_field>
+
+Include this association in the projection list (e.g., "_{(value_help_entity or 'VH').lower()}").
+Ensure the CDS syntax is RAP-compatible and activation-ready.
