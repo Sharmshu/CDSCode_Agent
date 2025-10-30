@@ -17,6 +17,27 @@ CDS view is created:
 @VDM.viewType: #CONSUMPTION
 @Search.searchable: true
 
+Example
+
+@AccessControl.authorizationCheck: #CHECK
+@ObjectModel: {
+   usageType: {
+      dataClass:          #TRANSACTIONAL,
+      serviceQuality:     #C,
+      sizeCategory:       #XL
+    }
+}
+@EndUserText.label: 'Sales Order Projection with Customer VH'
+@Metadata.allowExtensions: true
+@VDM.viewType: #CONSUMPTION
+@Search.searchable: true
+define view entity ZSO_MATERIAL from mara as _m
+  association[0..1] makt as _mk ON _mk.mara = _m.mara
+{
+  key _m.matnr,
+      _m.mtart
+      _mk.maktx
+
 #2. TYPE: ROOT VIEW ENTITY
 Defines the root business object for RAP BO. Used as the main data model with composition, keys, and transactional behavior.
 

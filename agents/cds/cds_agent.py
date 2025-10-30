@@ -33,7 +33,7 @@ class CdsAgent(BaseAgent):
         """
         Loads or builds FAISS vector DB from cds_requirements.txt file.
         """
-        kb_path = Path(os.path.dirname(__file__)) / "cds_view.txt"
+        kb_path = Path(os.path.dirname(__file__)) / "cds_requirements.txt"
         vs_path = Path(os.path.dirname(__file__)) / "cds_vector_store"
 
         embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
