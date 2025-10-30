@@ -24,7 +24,7 @@ class CdsAgent(BaseAgent):
         """Initialize the LLM client."""
         return ChatOpenAI(
             model_name=os.getenv("CDS_MODEL_NAME", "gpt-4.1-mini"),
-            temperature=float(os.getenv("CDS_TEMPERATURE", "0.25")),
+            temperature=float(os.getenv("CDS_TEMPERATURE", "0.3")),
             openai_api_key=os.getenv("OPENAI_API_KEY"),
         )
 
@@ -154,7 +154,10 @@ class CdsAgent(BaseAgent):
         cds_purpose = data.get("cds_purpose", "").strip()
 
         # --- Save result ---
-        cds_file = self.job_dir / "RAP_CDS_View.abap"
+        # cds_file = self.job_dir / "CDS_View.abap"
+        import uuid
+        cds_file = self.job_dir / f"CDS_View_{uuid.uuid4().hex}.abap"
+
         cds_file.write_text(cds_code, encoding="utf-8")
 
         self.logger.info(f"✅ RAP CDS view saved to: {cds_file}")

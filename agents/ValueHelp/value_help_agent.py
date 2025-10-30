@@ -29,7 +29,7 @@ class ValueHelpAgent(BaseAgent):
             raise ValueError("Missing OPENAI_API_KEY in environment variables.")
         return ChatOpenAI(
             model_name=os.getenv("VALUE_HELP_MODEL_NAME", "gpt-4.1-mini"),
-            temperature=float(os.getenv("VALUE_HELP_TEMPERATURE", "0.2")),
+            temperature=float(os.getenv("VALUE_HELP_TEMPERATURE", "0.3")),
             openai_api_key=api_key
         )
 
