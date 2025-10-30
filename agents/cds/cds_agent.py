@@ -75,8 +75,12 @@ class CdsAgent(BaseAgent):
             return ""
         combined = "\n\n".join([r.page_content for r in results])
         self.logger.info(f"📖 Retrieved {len(results)} RAG context chunks.")
+        for i, r in enumerate( results, start=1):
+            self.logger.info(f"\n--- RAG Chunk {i} ---\n{r.page_content}\n--- END CHUNK {i} ---")
+        combined += r.page_content + "\n\n"
         return combined
-
+    
+    
     # ------------------ MAIN RUN METHOD ------------------
     def run(self, section_text: str, metadata=None) -> dict:
         if not section_text:
@@ -103,7 +107,8 @@ class CdsAgent(BaseAgent):
         )
         
         value_help_entity = metadata.get("value_help_entity") if metadata else None
-
+        value_help_purpose = metadata.get("value_help_purpose") if metadata else None
+        
         # --- Prompt to LLM ---
         prompt = f"""
         Using the following requirement/context, produce JSON with two keys:
@@ -112,6 +117,10 @@ class CdsAgent(BaseAgent):
 
         Requirement Context:
         {full_context}
+        
+        Value Help Metadata:
+          - Entity Name: {value_help_entity}
+          - Purpose: {value_help_purpose}
         
         Important:
          - If a value help CDS entity is provided, DO NOT use @ObjectModel.valueHelpDefinition or @UI.valueHelp annotations.
