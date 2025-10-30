@@ -2,7 +2,7 @@
 
 Used to expose a subset of fields from a root view entity. Used in RAP for the projection layer.
 
-Give below mandatory annotations whenever define view entity TYPE
+Mandatory annotations whenever define view entity TYPE
 CDS view is created:
 @AccessControl.authorizationCheck: #CHECK
 @ObjectModel: {
@@ -20,7 +20,7 @@ CDS view is created:
 #2. TYPE: ROOT VIEW ENTITY
 Defines the root business object for RAP BO. Used as the main data model with composition, keys, and transactional behavior.
 
-Give below mandatory annotations whenever define root view entity TYPE
+Mandatory annotations whenever define root view entity TYPE
 CDS view is created:
 @AccessControl.authorizationCheck: #CHECK
 @EndUserText.label: '<meaningful description>'
@@ -43,7 +43,7 @@ define root view entity ZSO_Header
 #3. TYPE: PROJECTION VIEW ENTITY
 Used to expose a subset of fields from a root view entity. Used in RAP for the projection layer.
 
-Give below mandatory annotation when projection view entity needs to be created:
+Mandatory annotation when projection view entity needs to be created:
 @AccessControl.authorizationCheck: #CHECK
 @EndUserText.label: '<Projection view label>'
 
@@ -70,7 +70,7 @@ Use below annotations for analytical cube CDS view
 
 EXAMPLE:
 @AccessControl.authorizationCheck: #CHECK
-@EndUserText.label: 'Profitability Cube'
+@EndUserText.label: 'Analytical Cube'
 @Analytics.dataCategory: #CUBE
 define view entity C_ProfitCube
   as select from I_ProfitCenter
@@ -87,15 +87,13 @@ Limit total name length ≤ 30 characters.
 Avoid special characters or reserved words.
 
 #6. 
-Do not create SQL view name type CDS
-
-#7. 
 Place annotation just above the Define view
 
-#8. 
-While creating CDS between two or more table use association along with cardianality instead of inner joins
+#7. General Instruction for creating CDS
+- While creating CDS between two or more table use association along with cardianality instead of inner joins 
+- Do not create SQL view name type CDS
 
-#9. General instructions for Value help CDS
+#8. General instructions for Value help CDS
 If the following Value Help CDS entity exists, use it in the main CDS as an **association**:
 - Value Help Entity Name: {value_help_entity or "None provided"}
 - Purpose: {value_help_purpose or "N/A"}
@@ -107,3 +105,18 @@ If the following Value Help CDS entity exists, use it in the main CDS as an **as
 
 Include this association in the projection list (e.g., "_{(value_help_entity or 'VH').lower()}").
 Ensure the CDS syntax is RAP-compatible and activation-ready.
+
+EXAMPLE:
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Sales Order Projection'
+define view entity ZSO_Projection
+  as projection on ZSO_Header
+  association [0..1] to ZVH_Customer as _Customer
+      on _Customer.Customer = Customer
+{
+  key SalesOrder,
+  Customer,
+  //Make association public
+  _Customer
+  
+}
