@@ -117,6 +117,9 @@ class FmAgent(BaseAgent):
 
         Requirement Context:
         {full_context}
+        
+        --- Retrieved RAG Knowledge Base ---
+        {rag_context if rag_context else "No additional RAG context found."}
 
         Import Parameters:
         {json.dumps(import_params, indent=2) if import_params else "None"}
@@ -129,6 +132,7 @@ class FmAgent(BaseAgent):
          - Define IMPORTING and EXPORTING parameters in the interface.
          - Implement ABAP logic that uses import parameters to fetch or process data.
          - Return processed or selected data into export parameters.
+         - Create FM as per the requirements
 
         Output JSON only, strictly formatted:
         {{

@@ -133,6 +133,7 @@ def run_job(job_id: str, requirement_text: str):
            
            if fm_code:
                files_to_zip.append(("function_module.txt", fm_code))
+               logger.info(f"[{job_id}] 📘 Purpose: {fm_purpose}")
            else:
                 logger.warning(f"[{job_id}] FunctionModuleAgent returned empty code.")
         else:
