@@ -114,11 +114,9 @@ class CdsAgent(BaseAgent):
         {full_context}
         
         Important:
-         - Always generate **RAP-compatible CDS syntax** (activation ready).
          - If a value help CDS entity is provided, DO NOT use @ObjectModel.valueHelpDefinition or @UI.valueHelp annotations.
          - Instead, create an **association** to that value help CDS entity, using proper cardinality [0..1] and ON condition.
-         - Include that association in the projection list.
-         - Use the format shown in the retrieved RAG under “#9. General instructions for Value help CDS”.
+         - Use the format shown in the retrieved RAG under “#8. General instructions for Value help CDS”.
 
         Output format (strict JSON only, no markdown, no commentary):
         {{

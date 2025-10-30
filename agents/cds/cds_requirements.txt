@@ -92,6 +92,8 @@ Place annotation just above the Define view
 #7. General Instruction for creating CDS
 - While creating CDS between two or more table use association along with cardianality instead of inner joins 
 - Do not create SQL view name type CDS
+- Do not append Value Help as annotation at the end.
+- Use correct root/projection entity annotations based on input.
 
 #8. General instructions for Value help CDS
 If the following Value Help CDS entity exists, use it in the main CDS as an **association**:
