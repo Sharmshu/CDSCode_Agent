@@ -106,8 +106,9 @@ class CdsAgent(BaseAgent):
             )
         )
         
-        value_help_entity = metadata.get("value_help_entity") if metadata else None
-        value_help_purpose = metadata.get("value_help_purpose") if metadata else None
+        value_help_entity = metadata.get("value_help_entity") if metadata and "value_help_entity" in metadata else None
+        value_help_purpose = metadata.get("value_help_purpose") if metadata and "value_help_purpose" in metadata else None
+
         
         # --- Prompt to LLM ---
         prompt = f"""
