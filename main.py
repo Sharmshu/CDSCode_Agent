@@ -19,6 +19,7 @@ from utils.file_utils import get_job_dir, zip_outputs
 from utils.job_utils import split_sections
 from agents.cds.cds_agent import CdsAgent
 from agents.ValueHelp.value_help_agent import ValueHelpAgent
+from agents.FunctionModule.fm_agent import FmAgent
 # ------------------------------ CONFIG ------------------------------
 load_dotenv()
 
@@ -63,9 +64,11 @@ def run_job(job_id: str, requirement_text: str):
 
         value_help_text = get_section_text("7")  #Section 7 (Value Help)
         cds_text = get_section_text("8")  # Section 8 (CDS view)
+        fm_text  = get_section_text("10") # Section 10 (Function module)
         
         logger.info(f"[{job_id}] Section 7 length: {len(value_help_text)}")
         logger.info(f"[{job_id}] Section 8 length: {len(cds_text)}")
+        logger.info(f"[{job_id}] Section 10 length: {len(fm_text)}")
         
         # -------------------- Initialize --------------------
         cds_result = ""
@@ -119,7 +122,21 @@ def run_job(job_id: str, requirement_text: str):
         else:
             logger.info(f"[{job_id}] No CDS section found — skipping CdsAgent.")
         # cds_result = path_structure.read_text(encoding="utf-8") if path_structure.exists() else ""
-
+        
+        # --- Run Function module agent ---
+        if fm_text:
+           logger.info(f"[{job_id}] Running function module...") 
+           fm_agent = FmAgent(job_dir=job_dir)
+           fm_output = fm_agent.run(value_help_text)
+           fm_code = fm_output.get("code", "")
+           fm_purpose = fm_output.get("purpose", "")
+           
+           if fm_code:
+               files_to_zip.append(("function_module.txt", fm_code))
+           else:
+                logger.warning(f"[{job_id}] FunctionModuleAgent returned empty code.")
+        else:
+            logger.info(f"[{job_id}] No Function module section found — skipping FunctionModuleAgent.")
         # -------------------- In memory Zip Results --------------------
         if not files_to_zip:
             raise ValueError("No valid sections found — no output generated.")

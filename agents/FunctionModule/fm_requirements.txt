@@ -1,0 +1,97 @@
+#1. Naming convention
+- Custom function modules start with Z or Y (e.g., ZFM_GET_CUSTOMER_DETAILS).
+
+#2. General Instructions for Function Module
+Each Function Module consists of:
+1. Interface section (IMPORTING, EXPORTING, CHANGING, TABLES) as per user input.
+2. Exceptions (optional).
+3. Source code (implementation).
+
+# 3. Interface Definition Best Practices
+- IMPORTING parameters are inputs provided by the caller.
+- EXPORTING parameters return single values or structures.
+- TABLES parameters can be used for internal tables (legacy; prefer EXPORTING with typed tables).
+- CHANGING parameters are both input and output.
+
+# 4. Parameter Naming Standards
+- Input parameters: Prefix with IV_ (Importing Value)
+- Exporting single structure: Prefix with ES_ (Export Structure)
+- Exporting table: Prefix with ET_ (Export Table)
+- Changing parameter: Prefix with CV_
+- Constant: GC_
+- Internal table: LT_
+- Work area: LS_
+
+Example:
+IV_CUSTOMER_ID TYPE KNA1-KUNNR
+ET_SALES_ORDERS TYPE STANDARD TABLE OF ZSO_HEADER_STR
+
+# 5. Data Access and Business Logic Examples
+Use SELECT statements to fetch data, with proper WHERE conditions and INTO clauses.
+
+Examples:
+------------------------------------------------------------
+SELECT SINGLE * FROM kna1 INTO es_customer WHERE kunnr = iv_customer_id.
+
+SELECT vbeln posnr matnr kwmeng netwr
+  FROM vbap
+  INTO TABLE et_items
+  WHERE vbeln = iv_vbeln.
+------------------------------------------------------------
+
+Avoid SELECT * unless necessary. Use field lists for clarity and performance.
+
+# 6. Error Handling and Exceptions
+Define exceptions for predictable errors (e.g., record not found, invalid input).
+
+Example:
+------------------------------------------------------------
+FUNCTION zfm_get_material_info.
+*"----------------------------------------------------------------------
+*"  IMPORTING
+*"     VALUE(iv_matnr) TYPE mara-matnr
+*"  EXPORTING
+*"     VALUE(es_material) TYPE zmaterial_str
+*"  EXCEPTIONS
+*"     material_not_found
+*"----------------------------------------------------------------------
+  SELECT SINGLE matnr ersda mtart FROM mara INTO es_material WHERE matnr = iv_matnr.
+  IF sy-subrc <> 0.
+    RAISE material_not_found.
+  ENDIF.
+ENDFUNCTION.
+------------------------------------------------------------
+
+# 7. General Instructions for Generated Function Modules
+- Always begin with FUNCTION <name>.
+- Always end with ENDFUNCTION.
+- Always include the parameter documentation section (*" IMPORTING ... EXPORTING ...).
+- Ensure indentation and formatting are SAP-style (2 spaces).
+- Include meaningful comments for each logical section.
+- Include EXCEPTIONS if applicable.
+- Generated code should be compilable and ready for SE37.
+
+*"----------------------------------------------------------------------
+
+# 8. Guidelines for TABLES vs EXPORTING
+
+Avoid Tables always prefer EXPORTING
+
+# 9. Example: Create Function Module for Customer Lookup
+------------------------------------------------------------
+FUNCTION zfm_get_customer_by_city.
+*"----------------------------------------------------------------------
+*"  IMPORTING
+*"     VALUE(iv_city) TYPE adrc-ort01
+*"  EXPORTING
+*"     VALUE(et_customers) TYPE TABLE OF zcustomer_str
+*"----------------------------------------------------------------------
+  SELECT kunnr name1 ort01
+    FROM kna1
+    INTO TABLE et_customers
+    WHERE ort01 = iv_city.
+ENDFUNCTION.
+------------------------------------------------------------
+
+Purpose:
+This function module retrieves customers by city name.
