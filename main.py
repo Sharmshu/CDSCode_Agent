@@ -127,7 +127,7 @@ def run_job(job_id: str, requirement_text: str):
         if fm_text:
            logger.info(f"[{job_id}] Running function module...") 
            fm_agent = FmAgent(job_dir=job_dir)
-           fm_output = fm_agent.run(value_help_text)
+           fm_output = fm_agent.run(fm_text)
            fm_code = fm_output.get("code", "")
            fm_purpose = fm_output.get("purpose", "")
            
